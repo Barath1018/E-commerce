@@ -25,11 +25,11 @@ function FeaturedProducts() {
                 <h3 className="font-semibold mb-2">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-3">{product.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-blue-600">${product.price}</span>
+                  <span className="font-bold text-blue-600">₹{product.price}</span>
                   <button
                   onClick={() => {
                     addToCart({ product, quantity: 1 });
-                    toast.success(`${product.name} added to cart!`);
+                    toast.success(`₹{product.name} added to cart!`);
                   }}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
