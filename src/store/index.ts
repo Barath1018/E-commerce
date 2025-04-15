@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User, CartItem, WishlistItem } from '../types';
+export { useCartStore } from './cartStore';
 
 interface StoreState {
   user: User | null;
@@ -17,7 +18,7 @@ export const useStore = create<StoreState>((set) => ({
   user: null,
   cart: [],
   wishlist: [],
-  setUser: (user) => set({ user }),
+  setUser: (userData) => set({ user: userData }),
   addToCart: (item) =>
     set((state) => {
       const existingItem = state.cart.find(

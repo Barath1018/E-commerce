@@ -1,29 +1,38 @@
-export interface User {
-  id: string;
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
-}
-
-export interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  type: 'preset' | 'overlay' | 'sound' | 'course' | 'template' | 'other';
-  thumbnail_url: string;
-  download_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
+// src/store/index.ts
+import { create } from 'zustand';
+// src/types/index.ts
+import { Product } from '../data/products';
 
 export interface WishlistItem {
   product: Product;
-  added_at: string;
 }
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  thumbnail_url: string;
+}
+
+interface StoreState {
+  cart: { product: Product; quantity: number }[];
+  wishlist: Product[];
+  user: null | object;
+  addToCart: (item: { product: Product; quantity: number }) => void;
+  addToWishlist: (product: Product) => void;
+}
+
+export const useStore = create<StoreState>((set) => ({
+  cart: [],
+  wishlist: [],
+  user: null,
+  addToCart: (item) =>
+    set((state) => ({
+      cart: [...state.cart, item],
+    })),
+  addToWishlist: (product) =>
+    set((state) => ({
+      wishlist: [...state.wishlist, product],
+    })),
+}));

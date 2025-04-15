@@ -1,3 +1,4 @@
+// src/pages/Cart.tsx
 import React from 'react';
 import { useStore } from '../store';
 import { Link } from 'react-router-dom';
@@ -9,12 +10,11 @@ export default function Cart() {
   useRazorpayScript(); // Load Razorpay script
 
   const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const finalAmount = (total * 1.1).toFixed(2); // with tax
 
   const handleCheckout = () => {
     const options = {
       key: 'rzp_test_reQV4DJMcIRq0J', // 🔁 Replace with your Razorpay test key
-      amount: Number(finalAmount) * 100, // in paise
+      amount: total * 100, // in paise (without tax)
       currency: 'INR',
       name: 'Your Store Name',
       description: 'Order Payment',
@@ -74,7 +74,7 @@ export default function Cart() {
                   <p className="text-gray-600 text-sm">{item.product.description}</p>
                   <div className="flex items-center gap-4 mt-2">
                     <span className="text-blue-600 font-semibold">
-                    ₹{item.product.price.toFixed(2)}
+                      ₹{item.product.price.toFixed(2)}
                     </span>
                     <span className="text-gray-500">Quantity: {item.quantity}</span>
                   </div>
@@ -98,14 +98,10 @@ export default function Cart() {
                 <span className="text-gray-600">Subtotal</span>
                 <span>₹{total.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
-                <span>₹{(total * 0.1).toFixed(2)}</span>
-              </div>
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>₹{finalAmount}</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

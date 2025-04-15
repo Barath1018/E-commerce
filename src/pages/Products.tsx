@@ -1,11 +1,25 @@
 // src/pages/Products.tsx
 import React from 'react';
-import products, { Product } from '../data/products';
+import products from '../data/products';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
+import { Heart, HeartOff } from 'lucide-react';
 
 function Products() {
-  const addToCart = useStore((state) => state.addToCart);
+  const { addToCart, wishlist, addToWishlist, removeFromWishlist } = useStore();
+
+  const isInWishlist = (productId: string) =>
+    wishlist.some((item) => item.product.id === productId);
+
+  const toggleWishlist = (product: any) => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+      toast.error(`${product.name} removed from wishlist`);
+    } else {
+      addToWishlist({ product });
+      toast.success(`${product.name} added to wishlist`);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4">
@@ -14,8 +28,21 @@ function Products() {
         {products.map((product) => (
           <div
             key={product.id}
-            className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            className="relative group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
           >
+            {/* Wishlist Button */}
+            <button
+              onClick={() => toggleWishlist(product)}
+              className="absolute top-2 right-2 z-10 p-1 bg-white rounded-full shadow hover:bg-red-100 opacity-0 group-hover:opacity-100 transition"
+              title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            >
+              {isInWishlist(product.id) ? (
+                <HeartOff className="w-5 h-5 text-red-500" />
+              ) : (
+                <Heart className="w-5 h-5 text-red-500" />
+              )}
+            </button>
+
             <img
               src={product.thumbnail_url}
               alt={product.name}
@@ -35,7 +62,6 @@ function Products() {
                 >
                   Add to Cart
                 </button>
-
               </div>
             </div>
           </div>
