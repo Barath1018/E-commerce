@@ -29,7 +29,7 @@ function Products() {
                 <button
                   onClick={() => {
                     addToCart({ product, quantity: 1 });
-                    toast.success(`₹{product.name} added to cart!`);
+                    toast.success(`${product.name} added to cart!`);
                   }}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
