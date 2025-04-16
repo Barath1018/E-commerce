@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { Product } from '../data/products';
 
 interface CartItem extends Product {
-  quantity: number;z
+  quantity: number;
 }
 
 interface CartStore {

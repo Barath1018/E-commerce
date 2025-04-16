@@ -16,7 +16,7 @@ export default function Cart() {
       key: 'rzp_test_reQV4DJMcIRq0J', // 🔁 Replace with your Razorpay test key
       amount: total * 100, // in paise (without tax)
       currency: 'INR',
-      name: 'Your Store Name',
+      name: 'Aesthify Studio',
       description: 'Order Payment',
       image: 'https://your-logo-url.com/logo.png',
       handler: function (response: any) {
