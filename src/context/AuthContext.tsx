@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase/config";
+import CartLoadingAnimation from "../components/CartLoadingAnimation"; // <- Import your animation component
 
 interface AuthContextType {
   user: User | null;
@@ -21,9 +22,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log("User from Firebase:", firebaseUser);
       setUser(firebaseUser);
-      setLoading(false);
+
+      // Show loading for at least 1.5 seconds
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000); // 1.5 seconds delay
     });
 
     return () => unsubscribe();
@@ -42,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p className="text-lg text-gray-600">Loading...</p>
+        <CartLoadingAnimation /> {/* <- Your cool cart animation here */}
       </div>
     );
   }

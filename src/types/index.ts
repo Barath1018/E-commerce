@@ -1,7 +1,7 @@
 // src/store/index.ts
 import { create } from 'zustand';
 // src/types/index.ts
-import { Product } from '../data/products';
+import  Product  from '../data/products';
 
 export interface WishlistItem {
   product: Product;

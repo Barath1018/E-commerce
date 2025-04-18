@@ -41,26 +41,24 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-        // Use ONLY username as display name
         await updateProfile(userCredential.user, {
           displayName: username,
         });
 
-        // Save to Firestore
         await setDoc(doc(firestore, "users", userCredential.user.uid), {
           name,
           username,
           email,
         });
 
-        navigate("/profile");
+        navigate("/");
       } catch (err: any) {
         alert(err.message);
       }
     } else {
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        navigate("/profile");
+        navigate("/");
       } catch (err: any) {
         alert(err.message);
       }
@@ -70,16 +68,19 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
   const handleGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-
-      // Optional: Check if user exists in Firestore, if not add one
       const user = result.user;
-      await setDoc(doc(firestore, "users", user.uid), {
-        name: user.displayName || "",
-        username: user.displayName?.split(" ").join("").toLowerCase() || "",
-        email: user.email,
-      }, { merge: true });
 
-      navigate("/profile");
+      await setDoc(
+        doc(firestore, "users", user.uid),
+        {
+          name: user.displayName || "",
+          username: user.displayName?.split(" ").join("").toLowerCase() || "",
+          email: user.email,
+        },
+        { merge: true }
+      );
+
+      navigate("/");
     } catch (err: any) {
       alert(err.message);
     }
@@ -103,13 +104,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
-          <input
-            className="border p-2 rounded"
-            placeholder="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
         </>
       )}
 
@@ -127,6 +121,16 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+
+      {isSignup && (
+        <input
+          className="border p-2 rounded"
+          placeholder="Confirm Password"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+      )}
 
       <button className="bg-blue-500 text-white py-2 rounded" onClick={handleAuth}>
         {isSignup ? "Sign Up" : "Login"}

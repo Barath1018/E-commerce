@@ -1,8 +1,7 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { auth, firestore } from "../firebase/config";
-
 // Assume this runs after payment is successful
-const saveOrder = async (orderData) => {
+const saveOrder = async (orderData: { productName: any; price: any; quantity: any; }) => {
   const user = auth.currentUser;
   if (!user) return;
 

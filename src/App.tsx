@@ -14,6 +14,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Account from "./pages/Account";
 import { AuthProvider } from "./context/AuthContext";
+import ForgotPassword from "./pages/ForgotPassword"; // Adjust path accordingly
+
 
 function App() {
   console.log("🔥 App Rendered");
@@ -35,7 +37,7 @@ function App() {
               <Route path="/account" element={<Account />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminDashboard />} />
-              
+              <Route path="/forgot-password" element={<ForgotPassword />} />
             </Routes>
           </main>
           <Footer />

@@ -1,0 +1,47 @@
+/* CartLoadingAnimation.css */
+.cart-animation {
+  animation: moveLeftToRight 3s linear infinite; /* Move animation */
+}
+
+/* Keyframes for left to right movement */
+@keyframes moveLeftToRight {
+  0% {
+    transform: translateX(-150%); /* Start off-screen to the left */
+  }
+  50% {
+    transform: translateX(50%); /* Move to the center */
+  }
+  100% {
+    transform: translateX(150%); /* End off-screen to the right */
+  }
+}
+.line-below {
+  width: 350%; /* Adjust width of the line */
+  height: 2px; /* Thickness of the line */
+  background-color: #333; /* Line color */
+  margin-top: 20px; /* Space between animation and line */
+  transition: fadeInOut 3s ease-in-out;
+}
+.stone {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background-color: #ffffff00;
+  border: 1px solid black;
+  border-radius: 50%;
+}
+
+/* Stones above the line */
+.stone-above {
+  top: 390px;
+}
+/* Stones below the line */
+.stone-below {
+  top: 385px;
+}
+
+/* Individual stone positions */
+.stone-1 { right: 45%; }
+.stone-2 { right: 55%; }
+.stone-3 { right: 44%; }
+.stone-3.stone-above { top: 380px; }
