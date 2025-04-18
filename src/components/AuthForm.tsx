@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { auth, googleProvider } from "../firebase/config";
+import { auth, googleProvider, firestore } from "../firebase/config";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -8,6 +8,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { doc, setDoc } from "firebase/firestore";
 
 interface Props {
   isSignup?: boolean;
@@ -18,6 +19,7 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -30,28 +32,53 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
   }, []);
 
   const handleAuth = async () => {
-    try {
-      if (isSignup) {
+    if (isSignup) {
+      if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-        // Set display name to name or username
+        // Use ONLY username as display name
         await updateProfile(userCredential.user, {
-          displayName: name || username,
+          displayName: username,
         });
 
-        // You can also store additional user data in Firestore here
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Save to Firestore
+        await setDoc(doc(firestore, "users", userCredential.user.uid), {
+          name,
+          username,
+          email,
+        });
+
+        navigate("/profile");
+      } catch (err: any) {
+        alert(err.message);
       }
-      navigate("/profile");
-    } catch (err: any) {
-      alert(err.message);
+    } else {
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        navigate("/profile");
+      } catch (err: any) {
+        alert(err.message);
+      }
     }
   };
 
   const handleGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+
+      // Optional: Check if user exists in Firestore, if not add one
+      const user = result.user;
+      await setDoc(doc(firestore, "users", user.uid), {
+        name: user.displayName || "",
+        username: user.displayName?.split(" ").join("").toLowerCase() || "",
+        email: user.email,
+      }, { merge: true });
+
       navigate("/profile");
     } catch (err: any) {
       alert(err.message);
@@ -67,12 +94,21 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
           <input
             className="border p-2 rounded"
             placeholder="Name"
+            value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
             className="border p-2 rounded"
             placeholder="Username"
+            value={username}
             onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded"
+            placeholder="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
         </>
       )}
@@ -81,12 +117,14 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
         className="border p-2 rounded"
         placeholder="Email"
         type="email"
+        value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
       <input
         className="border p-2 rounded"
         placeholder="Password"
         type="password"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
 

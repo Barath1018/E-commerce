@@ -24,6 +24,7 @@ export default function Navbar() {
             <Link to="/products" className="text-gray-600 hover:text-gray-900">
               Products
             </Link>
+
             <Link to="/cart" className="text-gray-600 hover:text-gray-900 relative">
               <ShoppingCart className="w-6 h-6" />
               {cart.length > 0 && (
@@ -32,6 +33,7 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+
             <Link to="/wishlist" className="text-gray-600 hover:text-gray-900 relative">
               <Heart className="w-6 h-6" />
               {wishlist.length > 0 && (
@@ -40,6 +42,14 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+
+            {/* 👇 NEW: Order History link */}
+            {user && (
+              <Link to="/order-history" className="text-gray-600 hover:text-gray-900">
+                Order History
+              </Link>
+            )}
+
             {user ? (
               <div className="relative">
                 <button
@@ -108,6 +118,18 @@ export default function Navbar() {
               <Link to="/wishlist" className="text-gray-600 hover:text-gray-900">
                 Wishlist ({wishlist.length})
               </Link>
+
+              {/* 👇 NEW: Mobile Order History link */}
+              {user && (
+                <Link
+                  to="/order-history"
+                  className="text-gray-600 hover:text-gray-900"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Order History
+                </Link>
+              )}
+
               {user ? (
                 <>
                   <Link

@@ -4,6 +4,7 @@ import { auth, firestore } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -13,6 +14,7 @@ const Profile = () => {
   const [newUsername, setNewUsername] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {

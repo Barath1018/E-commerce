@@ -1,12 +1,28 @@
-// src/pages/Wishlist.tsx
-import React from 'react';
-import { useStore } from '../store';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useStore } from '../store';
 
 function Wishlist() {
-  const { wishlist, removeFromWishlist } = useStore();
+  const wishlist = useStore((state) => state.wishlist);
+  const removeFromWishlist = useStore((state) => state.removeFromWishlist);
+
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true); // wait till localStorage state is loaded
+    console.log('Wishlist loaded from state:', wishlist);
+  }, [wishlist]);
+
+  const handleRemoveFromWishlist = (productId: string) => {
+    removeFromWishlist(productId);
+    toast.success('Removed from wishlist');
+  };
+
+  if (!hydrated) {
+    return <p className="text-gray-500 text-center">Loading wishlist...</p>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -38,10 +54,7 @@ function Wishlist() {
                     View Product
                   </Link>
                   <button
-                    onClick={() => {
-                      removeFromWishlist(item.product.id);
-                      toast.error('Removed from wishlist');
-                    }}
+                    onClick={() => handleRemoveFromWishlist(item.product.id)}
                     className="text-red-500 hover:text-red-600"
                   >
                     <Trash2 className="w-5 h-5" />

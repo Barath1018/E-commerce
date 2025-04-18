@@ -35,6 +35,7 @@ function App() {
               <Route path="/account" element={<Account />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              
             </Routes>
           </main>
           <Footer />
