@@ -1,7 +1,7 @@
 // src/store/useCartStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Product } from '../data/products';
+import type { Product } from '../types';
 
 interface CartItem extends Product {
   quantity: number;

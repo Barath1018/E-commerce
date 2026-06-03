@@ -1,14 +1,13 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
-import { auth } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 
 const Account = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
-  const logout = () => {
-    auth.signOut();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -18,7 +17,7 @@ const Account = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">Hello, {user.email}</h1>
-      <button onClick={logout} className="bg-black text-white px-4 py-2 rounded mt-4">
+      <button onClick={handleLogout} className="bg-black text-white px-4 py-2 rounded mt-4">
         Logout
       </button>
     </div>

@@ -1,79 +1,37 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram } from 'lucide-react';
-import { FaDiscord } from 'react-icons/fa';
+import { Sparkles } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="border-t border-white/[0.06] bg-gray-950">
+      <div className="mx-auto max-w-7xl px-5 py-12">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-8">
           <div>
-            <h3 className="text-white text-lg font-semibold mb-4">Aesthify Studio</h3>
-            <p className="text-sm">
-              Your one-stop shop for premium digital resources, templates, and courses.
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-600">
+                <Sparkles className="h-3.5 w-3.5 text-gray-950" />
+              </div>
+              <span className="text-sm font-semibold text-white">Aesthify Studio</span>
+            </div>
+            <p className="mt-3 text-sm text-white/30 max-w-xs">
+              Premium digital resources for creators.
             </p>
           </div>
-          <div>
-            <h4 className="text-white text-md font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/products" className="hover:text-white">
-                  Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/courses" className="hover:text-white">
-                  Courses
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-white">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="mailto:aesthifystudio@gmail.com" className="hover:text-white">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white text-md font-semibold mb-4">Legal</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/privacy" className="hover:text-white">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="hover:text-white">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="/license" className="hover:text-white">
-                  License Agreement
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white text-md font-semibold mb-4">Follow Us</h4>
-            <div className="flex space-x-4">
-          
-              <a href="https://www.instagram.com/aesthify.studio/" className="hover:text-white">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="hover:text-white">
-                <FaDiscord className="w-5 h-5" />
-              </a>
+          <div className="flex gap-12 text-sm">
+            <div className="space-y-2.5">
+              <Link to="/products" className="block text-white/40 hover:text-white transition">Products</Link>
+              <Link to="/privacy" className="block text-white/40 hover:text-white transition">Privacy</Link>
+              <Link to="/terms" className="block text-white/40 hover:text-white transition">Terms</Link>
+            </div>
+            <div className="space-y-2.5">
+              <a href="https://www.instagram.com/aesthify.studio/" target="_blank" rel="noopener noreferrer" className="block text-white/40 hover:text-white transition">Instagram</a>
+              <a href="mailto:aesthifystudio@gmail.com" className="block text-white/40 hover:text-white transition">Contact</a>
+              <Link to="/license" className="block text-white/40 hover:text-white transition">License</Link>
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-800 mt-8 pt-8 text-sm text-center">
-          <p>&copy; {new Date().getFullYear()} DigitalMarket. All rights reserved.</p>
+        <div className="mt-10 border-t border-white/[0.06] pt-6 text-xs text-white/20">
+          &copy; {new Date().getFullYear()} Aesthify Studio
         </div>
       </div>
     </footer>

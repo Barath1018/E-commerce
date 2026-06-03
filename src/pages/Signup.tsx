@@ -1,8 +1,11 @@
-import React from 'react';
 import AuthForm from '../components/AuthForm';
 
 const Signup = () => {
-  return <AuthForm isSignup />;
+  return (
+    <div className="py-16">
+      <AuthForm isSignup />
+    </div>
+  );
 };
 
 export default Signup;

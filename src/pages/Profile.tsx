@@ -1,157 +1,122 @@
-import React, { useState, useEffect } from "react";
-import { User, Settings, ShoppingBag, Heart, LogOut, Edit } from "lucide-react";
-import { auth, firestore } from "../firebase/config";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { collection, getDocs } from "firebase/firestore";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../supabase/client";
+import { User, LogOut } from "lucide-react";
 
 const Profile = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUser(user);
-        setNewName(user.displayName || "");
-        setNewUsername(user.email?.split('@')[0] || "");
-      } else {
-        navigate("/login"); // Redirect to login if no user
-      }
-      setIsLoading(false);
-    });
+    if (!user) { navigate("/login"); return; }
+    setNewName(user.user_metadata?.full_name || "");
+    setNewUsername(user.user_metadata?.username || user.email?.split("@")[0] || "");
+  }, [user, navigate]);
 
-    return () => unsubscribe();
-  }, [navigate]);
-
-  if (isLoading) {
-    return <div>Loading...</div>; // Show a loading message while user data is being fetched
-  }
-
-  const handleLogout = async () => {
-    await auth.signOut();
-    navigate("/"); // Redirect to home or login after logout
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  if (!user) return null;
 
   const handleSave = async () => {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      // Update displayName (name) in Firebase Auth
-      await updateProfile(user, {
-        displayName: newName,
-      });
-
-      // Optionally, update username and other details in Firestore
-      const userRef = doc(firestore, "users", user.uid);
-      await setDoc(userRef, { username: newUsername }, { merge: true });
-
+      const { error } = await supabase.auth.updateUser({ data: { full_name: newName, username: newUsername } });
+      if (error) throw error;
       setIsEditing(false);
-      setIsSubmitting(false);
-    } catch (error) {
-      alert("Error updating profile: " + error.message);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white shadow-lg rounded-lg p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-100 p-4 rounded-full">
-              <User className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-              <p className="text-gray-600">Manage your account settings and preferences</p>
-            </div>
+    <div className="max-w-lg mx-auto space-y-8">
+      <h1 className="text-2xl font-bold text-white">Profile</h1>
+
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-6">
+        {/* Avatar */}
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-white/[0.08]">
+            <User className="h-6 w-6 text-amber-400/60" />
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1 rounded-md text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          <div>
+            <div className="text-sm font-medium text-white/80">{user.user_metadata?.full_name || "—"}</div>
+            <div className="text-xs text-white/30">{user.email}</div>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <div className="flex items-center space-x-3 mb-4">
-              <Settings className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Account Settings</h2>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <p className="mt-1 text-gray-900">{user?.email || "No email found"}</p>
-              </div>
-
-              {/* Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                {isEditing ? (
-                  <input
-                    className="mt-1 border p-2 rounded"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                ) : (
-                  <p className="mt-1 text-gray-900">{user?.displayName || "No name provided"}</p>
-                )}
-              </div>
-
-              {/* Username Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Username</label>
-                {isEditing ? (
-                  <input
-                    className="mt-1 border p-2 rounded"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                  />
-                ) : (
-                  <p className="mt-1 text-gray-900">{newUsername || "No username provided"}</p>
-                )}
-              </div>
-
-              {/* Edit Button */}
-              {!isEditing && (
-                <button
-                  className="text-blue-600 mt-2 flex items-center gap-1"
-                  onClick={handleEdit}
-                >
-                  <Edit className="w-4 h-4" /> Edit
-                </button>
-              )}
-
-              {/* Save Button */}
-              {isEditing && (
-                <button
-                  className="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md"
-                  onClick={handleSave}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Saving..." : "Save Changes"}
-                </button>
-              )}
-            </div>
+        <div className="border-t border-white/[0.06] pt-5 space-y-5">
+          <div>
+            <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-[0.2em] mb-1.5">Email</label>
+            <div className="text-sm text-white/50">{user.email}</div>
           </div>
 
-          {/* Other sections here (Order History, Wishlist, Preferences) */}
+          <div>
+            <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-[0.2em] mb-1.5">Name</label>
+            {isEditing ? (
+              <input
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white focus:border-white/[0.2] focus:outline-none focus:ring-1 focus:ring-white/20"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            ) : (
+              <div className="text-sm text-white/60">{user.user_metadata?.full_name || "—"}</div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-[0.2em] mb-1.5">Username</label>
+            {isEditing ? (
+              <input
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white focus:border-white/[0.2] focus:outline-none focus:ring-1 focus:ring-white/20"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+              />
+            ) : (
+              <div className="text-sm text-white/60">{newUsername || "—"}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleSave}
+                disabled={isSubmitting}
+                className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 transition hover:bg-white/90 disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-white/60 transition hover:border-white/[0.15] hover:bg-white/[0.06]"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-white/60 transition hover:border-white/[0.15] hover:bg-white/[0.06]"
+            >
+              Edit profile
+            </button>
+          )}
         </div>
       </div>
+
+      <button
+        onClick={async () => { await logout(); navigate("/"); }}
+        className="flex items-center gap-2 text-sm text-white/30 hover:text-red-400 transition"
+      >
+        <LogOut className="h-4 w-4" />
+        Sign out
+      </button>
     </div>
   );
 };

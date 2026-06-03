@@ -1,60 +1,40 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../supabase/client';
 
-// Initialize Supabase client (replace with your Supabase project details)
-const supabase = createClient('supabaseUrl', 'supabaseKey');
-
-// Function to save the order to Supabase
 export const saveOrderToSupabase = async (userId: string, cart: any[], totalPrice: number) => {
-  // Prepare the order data
-  const orderData = {
-    user_id: userId,
-    items: JSON.stringify(cart), // Store cart items as a JSON string
-    total_price: totalPrice,
-    status: 'pending', // You can track the order status (e.g., pending, completed)
-    created_at: new Date().toISOString(),
-  };
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      user_id: userId,
+      total: totalPrice,
+      status: 'pending',
+    })
+    .select()
+    .single();
 
-  try {
-    // Insert order data into the 'orders' table in Supabase
-    const { data, error } = await supabase
-      .from('orders')
-      .insert([orderData]);
+  if (orderError) throw orderError;
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    // Optionally, save each order item in a separate table for details (optional)
-    await saveOrderItemsToSupabase(data[0].id, cart); // Passing the order ID
-
-    return true; // Successfully saved order
-  } catch (error) {
-    console.error('Error saving order to Supabase:', error);
-    return false;
-  }
-};
-
-// Function to save order items to Supabase (optional)
-export const saveOrderItemsToSupabase = async (orderId: number, cart: any[]) => {
-  const orderItems = cart.map((item) => ({
-    order_id: orderId,
+  const orderItems = cart.map((item: any) => ({
+    order_id: order.id,
     product_id: item.product.id,
+    product_name: item.product.name,
     quantity: item.quantity,
     price: item.product.price,
+    license_type: item.licenseType || 'standard',
+    download_limit: 5,
+    downloads_used: 0,
+    files: item.product.files?.map((f: any) => ({
+      name: f.name,
+      url: f.url,
+      size: f.size,
+      type: f.type,
+    })) || [],
   }));
 
-  try {
-    const { error } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .insert(orderItems);
 
-    if (error) {
-      throw new Error(error.message);
-    }
+  if (itemsError) throw itemsError;
 
-    return true;
-  } catch (error) {
-    console.error('Error saving order items to Supabase:', error);
-    return false;
-  }
+  return order;
 };

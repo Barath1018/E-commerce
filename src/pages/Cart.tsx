@@ -1,118 +1,113 @@
-// src/pages/Cart.tsx
-import React from 'react';
 import { useStore } from '../store';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useOrderStore } from '../store/orderStore';
+import toast from 'react-hot-toast';
 import useRazorpayScript from '../hooks/useRazorpayScript';
 
 export default function Cart() {
-  const { cart, removeFromCart } = useStore();
-  useRazorpayScript(); // Load Razorpay script
+  const { cart, clearCart, removeFromCart } = useStore();
+  const { user } = useAuth();
+  const createOrder = useOrderStore((state) => state.createOrder);
+  const navigate = useNavigate();
+  useRazorpayScript();
 
-  const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const total = cart.reduce((sum, item) => {
+    if (item.licenseType === 'free') return sum;
+    return sum + item.product.price * item.quantity;
+  }, 0);
 
-  const handleCheckout = () => {
-    const options = {
-      key: 'rzp_test_reQV4DJMcIRq0J', // 🔁 Replace with your Razorpay test key
-      amount: total * 100, // in paise (without tax)
+  const handleCheckout = async () => {
+    if (!user) { navigate('/login'); return; }
+
+    const freeItems = cart.filter((i) => i.licenseType === 'free');
+    const paidItems = cart.filter((i) => i.licenseType !== 'free');
+
+    if (freeItems.length > 0 && paidItems.length === 0) {
+      try {
+        const order = await createOrder({
+          userId: user.id,
+          items: freeItems.map((i) => ({ product: i.product, quantity: i.quantity, licenseType: i.licenseType })),
+          total: 0,
+        });
+        clearCart();
+        toast.success(`Order ${order.id.slice(0, 8)} created`);
+      } catch (err: any) { toast.error(err.message); }
+      return;
+    }
+
+    const keyId = (import.meta.env.VITE_RAZORPAY_KEY_ID as string)?.replace(/['"]/g, '').trim();
+    if (!keyId) { toast.error('Razorpay key missing.'); return; }
+    if (!window.Razorpay) { toast.error('Razorpay SDK loading.'); return; }
+
+    const razorpay = new window.Razorpay({
+      key: keyId,
+      amount: Math.round(total * 100),
       currency: 'INR',
       name: 'Aesthify Studio',
-      description: 'Order Payment',
-      image: 'https://your-logo-url.com/logo.png',
-      handler: function (response: any) {
-        alert(`Payment successful!\nPayment ID: ${response.razorpay_payment_id}`);
-        // You can redirect or save payment status here
+      description: `${paidItems.length} item(s)`,
+      handler: async () => {
+        try {
+          const order = await createOrder({
+            userId: user.id,
+            items: [...paidItems, ...freeItems].map((i) => ({ product: i.product, quantity: i.quantity, licenseType: i.licenseType })),
+            total,
+          });
+          clearCart();
+          toast.success(`Order ${order.id.slice(0, 8)} created`);
+        } catch (err: any) { toast.error(err.message); }
       },
-      prefill: {
-        name: 'Customer Name',
-        email: 'customer@example.com',
-        contact: '9999999999',
-      },
-      theme: {
-        color: '#2563eb', // Tailwind blue-600
-      },
-    };
-
-    const razorpay = new (window as any).Razorpay(options);
+      prefill: { name: user.user_metadata?.full_name ?? '', email: user.email ?? '' },
+      theme: { color: '#ffffff' },
+      modal: { ondismiss: () => toast('Payment cancelled') },
+    });
     razorpay.open();
   };
 
   if (cart.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <ShoppingBag className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
-        <p className="text-gray-600 mb-8">Looks like you haven't added any products to your cart yet.</p>
-        <Link
-          to="/products"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-        >
-          Browse Products
+      <div className="py-24 text-center">
+        <ShoppingBag className="mx-auto h-12 w-12 text-white/10 mb-4" />
+        <p className="text-white/40 mb-4">Your cart is empty.</p>
+        <Link to="/products" className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/70 transition hover:border-white/[0.2] hover:bg-white/[0.08] hover:text-white">
+          Browse products
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm">
-            {cart.map((item) => (
-              <div
-                key={item.product.id}
-                className="flex items-center gap-4 p-4 border-b last:border-b-0"
-              >
-                <img
-                  src={item.product.thumbnail_url}
-                  alt={item.product.title}
-                  className="w-20 h-20 object-cover rounded"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.product.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.product.description}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-blue-600 font-semibold">
-                      ₹{item.product.price.toFixed(2)}
-                    </span>
-                    <span className="text-gray-500">Quantity: {item.quantity}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeFromCart(item.product.id)}
-                  className="text-red-500 hover:text-red-600 p-2"
-                  aria-label="Remove item"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span>₹{total.toFixed(2)}</span>
-              </div>
-              <div className="border-t pt-2 mt-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>₹{total.toFixed(2)}</span>
-                </div>
-              </div>
+    <div className="max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold text-white mb-8">Cart</h1>
+      <div className="space-y-3">
+        {cart.map((item) => (
+          <div key={item.product.id} className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.1]">
+            <img src={item.product.thumbnailUrl} alt={item.product.name} className="w-16 h-16 rounded-lg object-cover bg-white/[0.05]" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-white/80 truncate">{item.product.name}</div>
+              <div className="text-xs text-white/30 mt-0.5">Qty: {item.quantity}</div>
             </div>
-            <button
-              onClick={handleCheckout}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Proceed to Checkout
+            <div className="text-sm font-semibold text-white/90">
+              {item.licenseType === 'free' ? 'Free' : `₹${item.product.price}`}
+            </div>
+            <button onClick={() => removeFromCart(item.product.id)} className="text-white/20 hover:text-red-400 transition p-1">
+              <Trash2 className="h-4 w-4" />
             </button>
           </div>
+        ))}
+      </div>
+      <div className="mt-8 border-t border-white/[0.06] pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-sm text-white/40">Total</span>
+          <span className="text-xl font-bold text-white">₹{total.toFixed(2)}</span>
         </div>
+        <button
+          onClick={handleCheckout}
+          className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-gray-950 transition hover:bg-white/90 shadow-lg shadow-white/10"
+        >
+          {total === 0 ? 'Download Free' : 'Checkout'}
+        </button>
       </div>
     </div>
   );
