@@ -43,6 +43,7 @@ type OrderStoreState = {
   fetchAllOrders: () => Promise<void>;
   getOrdersForUser: (userId: string) => StoredOrder[];
   registerDownload: (orderId: string, productId: string) => Promise<boolean>;
+  checkOwnedProducts: (userId: string, productIds: string[]) => Promise<string[]>;
 };
 
 const DOWNLOAD_LIMIT = 5;
@@ -241,5 +242,26 @@ export const useOrderStore = create<OrderStoreState>()((set, get) => ({
     }));
 
     return true;
+  },
+
+  checkOwnedProducts: async (userId, productIds) => {
+    if (!productIds.length) return [];
+
+    const { data: orderRows } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (!orderRows?.length) return [];
+
+    const orderIds = orderRows.map((o: any) => o.id);
+
+    const { data: itemRows } = await supabase
+      .from('order_items')
+      .select('product_id')
+      .in('order_id', orderIds)
+      .in('product_id', productIds);
+
+    return [...new Set((itemRows ?? []).map((r: any) => r.product_id))];
   },
 }));

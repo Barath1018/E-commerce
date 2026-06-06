@@ -75,14 +75,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (mounted) setLoading(false);
     }, 5000);
 
-    // Use getUser() to fetch fresh user data from server (not cached session)
-    supabase.auth.getUser()
-      .then(async ({ data: { user: freshUser } }) => {
+    // Get session first — recovers from localStorage AND auto-refreshes expired tokens
+    supabase.auth.getSession()
+      .then(async ({ data: { session: currentSession } }) => {
         if (!mounted) return;
         clearTimeout(timeout);
 
-        // Also get session for token
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        // Then validate the session with the server for fresh user data
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
         if (!mounted) return;
 
         console.log('[Auth] freshUser:', freshUser?.id, 'metadata:', freshUser?.user_metadata);
