@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useStore } from '../store';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useOrderStore } from '../store/orderStore';
+import { useOrderStore, StoredOrder } from '../store/orderStore';
 import toast from 'react-hot-toast';
 import useRazorpayScript from '../hooks/useRazorpayScript';
+import CheckoutSuccessModal from '../components/CheckoutSuccessModal';
 
 export default function Cart() {
+  const [completedOrder, setCompletedOrder] = useState<StoredOrder | null>(null);
   const { cart, clearCart, removeFromCart } = useStore();
   const { user } = useAuth();
   const createOrder = useOrderStore((state) => state.createOrder);
@@ -32,7 +35,7 @@ export default function Cart() {
           total: 0,
         });
         clearCart();
-        toast.success(`Order ${order.id.slice(0, 8)} created`);
+        setCompletedOrder(order);
       } catch (err: any) { toast.error(err.message); }
       return;
     }
@@ -55,7 +58,7 @@ export default function Cart() {
             total,
           });
           clearCart();
-          toast.success(`Order ${order.id.slice(0, 8)} created`);
+          setCompletedOrder(order);
         } catch (err: any) { toast.error(err.message); }
       },
       prefill: { name: user.user_metadata?.full_name ?? '', email: user.email ?? '' },
@@ -64,6 +67,10 @@ export default function Cart() {
     });
     razorpay.open();
   };
+
+  if (completedOrder) {
+    return <CheckoutSuccessModal order={completedOrder} onClose={() => setCompletedOrder(null)} />;
+  }
 
   if (cart.length === 0) {
     return (
