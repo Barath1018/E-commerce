@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { Sparkles } from 'lucide-react';
 
 interface Props {
   isSignup?: boolean;
-  redirectTo?: string;
 }
 
-const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
+const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -16,7 +15,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleAuth = async () => {
     setLoading(true);
@@ -42,7 +40,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
         });
 
         if (error) throw error;
-        navigate(redirectTo);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -50,7 +47,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
         });
 
         if (error) throw error;
-        navigate(redirectTo);
       }
     } catch (err: any) {
       setError(err.message);
@@ -64,16 +60,16 @@ const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
     setError('');
 
     try {
+      const redirectTo = window.location.origin + window.location.pathname + window.location.search;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo,
         },
       });
 
       if (error) throw error;
-
-      navigate(redirectTo);
+      // Don't navigate — OAuth popup will handle auth state change
     } catch (err: any) {
       setError(err.message);
     } finally {

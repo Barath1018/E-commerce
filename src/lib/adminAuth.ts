@@ -4,10 +4,10 @@ export const isAdminEmail = async (email?: string | null): Promise<boolean> => {
   if (!email) return false;
 
   const { data, error } = await supabase
-    .from('admin_emails')
-    .select('email')
+    .from('profiles')
+    .select('role')
     .eq('email', email)
-    .single();
+    .maybeSingle();
 
-  return !error && !!data;
+  return !error && data?.role === 'admin';
 };

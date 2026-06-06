@@ -88,21 +88,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[Auth] freshUser:', freshUser?.id, 'metadata:', freshUser?.user_metadata);
         console.log('[Auth] session user:', currentSession?.user?.id);
 
-        setSession(currentSession);
-        setUser(freshUser ?? currentSession?.user ?? null);
-
-        const needs = await checkNeedsOnboardingAsync(freshUser ?? currentSession?.user ?? null);
+        const resolvedUser = freshUser ?? currentSession?.user ?? null;
+        const needs = await checkNeedsOnboardingAsync(resolvedUser);
         console.log('[Auth] needsOnboarding result:', needs);
-        if (mounted) setNeedsOnboarding(needs);
 
-        if (freshUser ?? currentSession?.user) {
-          const u = freshUser ?? currentSession!.user;
-          isAdminEmail(u.email).then((admin) => {
-            setIsAdmin(admin);
-          });
+        let admin = false;
+        if (resolvedUser) {
+          admin = await isAdminEmail(resolvedUser.email);
         }
 
-        setLoading(false);
+        if (mounted) {
+          setSession(currentSession);
+          setUser(resolvedUser);
+          setNeedsOnboarding(needs);
+          setIsAdmin(admin);
+          setLoading(false);
+        }
       })
       .catch((err) => {
         console.error('AuthSessionCheckError:', err);
@@ -117,22 +118,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { user: freshUser } } = await supabase.auth.getUser();
       const user = freshUser ?? newSession?.user ?? null;
 
-      setSession(newSession);
-      setUser(user);
-
+      // Compute all state before setting anything so React batches updates
       const needs = await checkNeedsOnboardingAsync(user);
-      setNeedsOnboarding(needs);
-
+      let admin = false;
       if (user) {
         try {
-          const admin = await isAdminEmail(user.email);
-          setIsAdmin(admin);
+          admin = await isAdminEmail(user.email);
         } catch {
-          setIsAdmin(false);
+          admin = false;
         }
-      } else {
-        setIsAdmin(false);
       }
+
+      setSession(newSession);
+      setUser(user);
+      setNeedsOnboarding(needs);
+      setIsAdmin(admin);
     });
 
     return () => {
