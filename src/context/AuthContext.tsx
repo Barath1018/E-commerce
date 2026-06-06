@@ -75,50 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (mounted) setLoading(false);
     }, 5000);
 
-    // Get session first — recovers from localStorage AND auto-refreshes expired tokens
-    supabase.auth.getSession()
-      .then(async ({ data: { session: currentSession } }) => {
-        if (!mounted) return;
-        clearTimeout(timeout);
-
-        // Then validate the session with the server for fresh user data
-        const { data: { user: freshUser } } = await supabase.auth.getUser();
-        if (!mounted) return;
-
-        console.log('[Auth] freshUser:', freshUser?.id, 'metadata:', freshUser?.user_metadata);
-        console.log('[Auth] session user:', currentSession?.user?.id);
-
-        const resolvedUser = freshUser ?? currentSession?.user ?? null;
-        const needs = await checkNeedsOnboardingAsync(resolvedUser);
-        console.log('[Auth] needsOnboarding result:', needs);
-
-        let admin = false;
-        if (resolvedUser) {
-          admin = await isAdminEmail(resolvedUser.email);
-        }
-
-        if (mounted) {
-          setSession(currentSession);
-          setUser(resolvedUser);
-          setNeedsOnboarding(needs);
-          setIsAdmin(admin);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error('AuthSessionCheckError:', err);
-        clearTimeout(timeout);
-        setLoading(false);
-      });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      // Fetch fresh user data from server
-      const { data: { user: freshUser } } = await supabase.auth.getUser();
-      const user = freshUser ?? newSession?.user ?? null;
-
-      // Compute all state before setting anything so React batches updates
+    const finalize = async (currentSession: Session | null) => {
+      if (!mounted) return;
+      const user = currentSession?.user ?? null;
+      console.log('[Auth] finalize: user =', user?.id, 'session =', currentSession?.access_token?.slice(0, 20));
       const needs = await checkNeedsOnboardingAsync(user);
       let admin = false;
       if (user) {
@@ -128,12 +88,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           admin = false;
         }
       }
+      if (mounted) {
+        setSession(currentSession);
+        setUser(user);
+        setNeedsOnboarding(needs);
+        setIsAdmin(admin);
+        clearTimeout(timeout);
+        setLoading(false);
+      }
+    };
 
-      setSession(newSession);
-      setUser(user);
-      setNeedsOnboarding(needs);
-      setIsAdmin(admin);
+    // Primary: onAuthStateChange handles INITIAL_SESSION when client recovers from storage
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Use session.user directly from the event — don't call getUser() (fails for expired tokens)
+      void finalize(newSession);
     });
+
+    // Backup: also call getSession in case INITIAL_SESSION event already fired before subscription
+    supabase.auth.getSession()
+      .then(({ data: { session: currentSession } }) => {
+        if (mounted) void finalize(currentSession);
+      })
+      .catch((err) => {
+        console.error('AuthSessionCheckError:', err);
+        if (mounted) {
+          clearTimeout(timeout);
+          setLoading(false);
+        }
+      });
 
     return () => {
       mounted = false;
