@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase/client';
-import { isAdminHost, isAdminEmail } from '../lib/adminAuth';
-import { useAuth } from '../context/AuthContext';
 import { Sparkles } from 'lucide-react';
 
 interface Props {
   isSignup?: boolean;
+  redirectTo?: string;
 }
 
-const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
+const AuthForm: React.FC<Props> = ({ isSignup = false, redirectTo = '/' }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -17,16 +16,9 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { logout } = useAuth();
   const navigate = useNavigate();
-  const adminHost = isAdminHost();
 
   const handleAuth = async () => {
-    if (adminHost && !isSignup) {
-      setError('This portal requires Google sign-in. Click "Continue with Google".');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
@@ -50,7 +42,7 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
         });
 
         if (error) throw error;
-        navigate('/');
+        navigate(redirectTo);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -58,7 +50,7 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
         });
 
         if (error) throw error;
-        navigate('/');
+        navigate(redirectTo);
       }
     } catch (err: any) {
       setError(err.message);
@@ -81,21 +73,7 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
 
       if (error) throw error;
 
-      if (adminHost) {
-        const user = data?.user;
-        if (user) {
-          const admin = await isAdminEmail(user.email);
-          if (admin) {
-            navigate('/');
-            return;
-          }
-          await logout();
-          setError('You do not have access to this admin portal.');
-          return;
-        }
-      }
-
-      navigate('/');
+      navigate(redirectTo);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -143,7 +121,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
             </>
           )}
 
-          {!adminHost && (
             <>
               <input
                 className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/25 focus:border-white/[0.2] focus:outline-none focus:ring-1 focus:ring-white/20"
@@ -160,7 +137,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </>
-          )}
 
           {isSignup && (
             <input
@@ -173,7 +149,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
           )}
         </div>
 
-        {!adminHost && (
           <button
             className="mt-5 w-full rounded-xl bg-white py-3 text-sm font-semibold text-gray-950 transition hover:bg-white/90 disabled:opacity-50"
             onClick={handleAuth}
@@ -181,7 +156,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
           >
             {loading ? 'Please wait...' : isSignup ? 'Sign up' : 'Log in'}
           </button>
-        )}
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-white/[0.08]" />
@@ -203,7 +177,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
           Continue with Google
         </button>
 
-        {!adminHost && (
           <div className="mt-5 text-center text-sm text-white/30">
             {isSignup ? (
               <>Already have an account? <Link to="/login" className="text-white/60 hover:text-white transition">Log in</Link></>
@@ -216,7 +189,6 @@ const AuthForm: React.FC<Props> = ({ isSignup = false }) => {
               </>
             )}
           </div>
-        )}
       </div>
     </div>
   );

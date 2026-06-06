@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase/client';
-import { isAdminEmail, isAdminHost, getAdminSession, setAdminSession } from '../lib/adminAuth';
+import { isAdminEmail } from '../lib/adminAuth';
 import CartLoadingAnimation from '../components/CartLoadingAnimation';
 
 interface AuthContextType {
@@ -98,10 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (freshUser ?? currentSession?.user) {
           const u = freshUser ?? currentSession!.user;
           isAdminEmail(u.email).then((admin) => {
-            const hostIsAdmin = isAdminHost();
-            const adminStatus = hostIsAdmin && admin;
-            setIsAdmin(adminStatus);
-            setAdminSession(adminStatus);
+            setIsAdmin(admin);
           });
         }
 
@@ -129,17 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         try {
           const admin = await isAdminEmail(user.email);
-          const hostIsAdmin = isAdminHost();
-          const adminStatus = hostIsAdmin && admin;
-          setIsAdmin(adminStatus);
-          setAdminSession(adminStatus);
+          setIsAdmin(admin);
         } catch {
           setIsAdmin(false);
-          setAdminSession(false);
         }
       } else {
         setIsAdmin(false);
-        setAdminSession(false);
       }
     });
 
@@ -157,7 +149,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setIsAdmin(false);
       setNeedsOnboarding(false);
-      setAdminSession(false);
     } catch (error) {
       console.error('Error during sign out:', error);
     }

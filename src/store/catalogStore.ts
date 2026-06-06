@@ -263,12 +263,26 @@ export const useProductCatalog = create<ProductCatalogState>()((set, get) => ({
 }));
 
 export const createAccessCode = (product: CatalogProduct, orderId: string) => {
-  const prefix = product.uniqueCodePrefix ?? 'AESTHIFY';
-  const randomSegment = Array.from({ length: 5 }, () =>
-    Math.random().toString(36).slice(2, 8).toUpperCase()
-  ).join('-');
+  // 32-character code format with fixed positions:
+  // 1:A 2:E 3:S 4:T 5:H 6:I 9:2 10:K 11:6 13:X 16:4 20:9 22:F 25:7 27:M 29:3 32:P
+  // Remaining positions are random alphanumeric (A-Z, 0-9)
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const code = new Array(32);
+  const fixed: Record<number, string> = {
+    1: 'A', 2: 'E', 3: 'S', 4: 'T', 5: 'H', 6: 'I',
+    9: '2', 10: 'K', 11: '6', 13: 'X', 16: '4',
+    20: '9', 22: 'F', 25: '7', 27: 'M', 29: '3', 32: 'P',
+  };
 
-  return `${prefix}-${product.id.slice(0, 8)}-${orderId.slice(0, 8)}-${randomSegment}`;
+  for (let i = 1; i <= 32; i++) {
+    if (fixed[i]) {
+      code[i - 1] = fixed[i];
+    } else {
+      code[i - 1] = chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+
+  return code.join('');
 };
 
 let channel: RealtimeChannel | null = null;
