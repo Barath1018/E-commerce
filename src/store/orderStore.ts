@@ -131,11 +131,17 @@ export const useOrderStore = create<OrderStoreState>()((set, get) => ({
 
   fetchOrdersForUser: async (userId) => {
     set({ loading: true });
-    const { data: orderRows } = await supabase
+    const { data: orderRows, error: orderError } = await supabase
       .from('orders')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    if (orderError) {
+      console.error('[OrderStore] fetchOrdersForUser error:', orderError);
+      set({ orders: [], loading: false });
+      return;
+    }
 
     if (!orderRows?.length) {
       set({ orders: [], loading: false });
@@ -143,10 +149,16 @@ export const useOrderStore = create<OrderStoreState>()((set, get) => ({
     }
 
     const orderIds = orderRows.map((o: any) => o.id);
-    const { data: itemRows } = await supabase
+    const { data: itemRows, error: itemsError } = await supabase
       .from('order_items')
       .select('*')
       .in('order_id', orderIds);
+
+    if (itemsError) {
+      console.error('[OrderStore] fetchOrderItems error:', itemsError);
+      set({ orders: [], loading: false });
+      return;
+    }
 
     const itemsByOrder = new Map<string, any[]>();
     (itemRows ?? []).forEach((item: any) => {

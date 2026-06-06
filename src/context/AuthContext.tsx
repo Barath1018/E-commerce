@@ -145,12 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    } finally {
       setUser(null);
       setSession(null);
       setIsAdmin(false);
       setNeedsOnboarding(false);
-    } catch (error) {
-      console.error('Error during sign out:', error);
     }
   };
 

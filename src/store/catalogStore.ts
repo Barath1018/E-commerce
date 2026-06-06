@@ -265,18 +265,29 @@ export const useProductCatalog = create<ProductCatalogState>()((set, get) => ({
 export const createAccessCode = (product: CatalogProduct, orderId: string) => {
   // 32-character code format with fixed positions:
   // 1:A 2:E 3:S 4:T 5:H 6:I 9:2 10:K 11:6 13:X 16:4 20:9 22:F 25:7 27:M 29:3 32:P
-  // Remaining positions are random alphanumeric (A-Z, 0-9)
+  // Remaining positions: 8 random, 12-14 from orderId hash, 31 orderId-derived
+  // This makes each code unique per order while maintaining the fixed format
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const orderHash = orderId.replace(/-/g, '').toUpperCase();
   const code = new Array(32);
   const fixed: Record<number, string> = {
     1: 'A', 2: 'E', 3: 'S', 4: 'T', 5: 'H', 6: 'I',
     9: '2', 10: 'K', 11: '6', 13: 'X', 16: '4',
     20: '9', 22: 'F', 25: '7', 27: 'M', 29: '3', 32: 'P',
   };
+  const orderPositions: Record<number, number> = {
+    7: 0, 8: 1, 12: 2, 14: 3, 15: 4,
+    17: 5, 18: 6, 19: 7, 21: 8, 23: 9,
+    24: 10, 26: 11, 28: 12, 30: 13, 31: 14,
+  };
 
   for (let i = 1; i <= 32; i++) {
     if (fixed[i]) {
       code[i - 1] = fixed[i];
+    } else if (orderPositions[i] !== undefined) {
+      const idx = orderPositions[i];
+      const charCode = orderHash.charCodeAt(idx % orderHash.length) % chars.length;
+      code[i - 1] = chars[charCode];
     } else {
       code[i - 1] = chars[Math.floor(Math.random() * chars.length)];
     }
