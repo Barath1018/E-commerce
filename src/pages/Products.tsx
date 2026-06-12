@@ -15,6 +15,7 @@ function Products() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [freeOnly, setFreeOnly] = useState(false);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -23,9 +24,16 @@ function Products() {
         product.description.toLowerCase().includes(search.toLowerCase()) ||
         product.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
       const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const isFreeProduct = product.licenseType === 'free' || product.isFree;
+      const matchesFree = !freeOnly || isFreeProduct;
+      return matchesSearch && matchesCategory && matchesFree;
     });
-  }, [products, search, selectedCategory]);
+  }, [products, search, selectedCategory, freeOnly]);
+
+  const freeCount = useMemo(
+    () => products.filter((p) => p.licenseType === 'free' || p.isFree).length,
+    [products]
+  );
 
   const isInWishlist = (productId: string) =>
     wishlist.some((item) => item.product.id === productId);
@@ -62,20 +70,32 @@ function Products() {
             className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-white/25 focus:border-white/[0.2] focus:outline-none focus:ring-1 focus:ring-white/20"
           />
         </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition ${
-                selectedCategory === cat
-                  ? 'bg-white text-gray-950 font-medium'
-                  : 'text-white/40 hover:bg-white/[0.06] hover:text-white/70'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setFreeOnly(!freeOnly)}
+            className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm transition ${
+              freeOnly
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300 font-medium'
+                : 'border-white/[0.08] text-white/40 hover:border-white/[0.15] hover:text-white/70'
+            }`}
+          >
+            Free {freeCount > 0 && <span className="ml-1 text-[10px] opacity-70">({freeCount})</span>}
+          </button>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition ${
+                  selectedCategory === cat
+                    ? 'bg-white text-gray-950 font-medium'
+                    : 'text-white/40 hover:bg-white/[0.06] hover:text-white/70'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

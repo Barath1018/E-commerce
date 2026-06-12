@@ -236,7 +236,47 @@ export const useProductCatalog = create<ProductCatalogState>()((set, get) => ({
   },
 
   deleteProduct: async (productId) => {
-    await supabase.from('products').delete().eq('id', productId);
+    const product = get().products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const STORAGE_HOST = `${(import.meta.env.VITE_SUPABASE_URL as string)?.replace(/\/$/, '')}/storage/v1/object/`;
+
+    const extractStoragePath = (url: string, bucket: string): string | null => {
+      if (!url) return null;
+      const marker = `${bucket}/`;
+      const idx = url.indexOf(marker);
+      if (idx === -1) return null;
+      let path = url.slice(idx + marker.length);
+      const qIdx = path.indexOf('?');
+      if (qIdx !== -1) path = path.slice(0, qIdx);
+      return path || null;
+    };
+
+    const thumbnailPath = extractStoragePath(product.thumbnailUrl ?? '', 'product-thumbnails');
+    const previewPaths = (product.previewImages ?? [])
+      .map((url) => extractStoragePath(url, 'product-previews'))
+      .filter((p): p is string => !!p);
+
+    const filesByBucket: Record<string, string[]> = {
+      'product-thumbnails': thumbnailPath ? [thumbnailPath] : [],
+      'product-previews': previewPaths,
+      'product-files': product.files
+        .map((f) => f.storage_path)
+        .filter((p): p is string => !!p),
+    };
+
+    for (const [bucket, paths] of Object.entries(filesByBucket)) {
+      if (paths.length === 0) continue;
+      try {
+        await supabase.storage.from(bucket).remove(paths);
+      } catch (err) {
+        console.warn(`[Catalog] Failed to remove ${bucket} files:`, err);
+      }
+    }
+
+    const { error } = await supabase.from('products').delete().eq('id', productId);
+    if (error) throw error;
+
     set((state) => ({
       products: state.products.filter((p) => p.id !== productId),
     }));

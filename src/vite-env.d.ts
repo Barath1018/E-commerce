@@ -1,31 +1,43 @@
 /// <reference types="vite/client" />
 
+interface RazorpayPaymentResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
 interface RazorpayOptions {
-	key: string;
-	amount: number;
-	currency: string;
-	name: string;
-	description?: string;
-	image?: string;
-	handler: (response: unknown) => void;
-	prefill?: {
-		name?: string;
-		email?: string;
-		contact?: string;
-	};
-	notes?: Record<string, string>;
-	theme?: {
-		color?: string;
-	};
-	modal?: {
-		ondismiss?: () => void;
-	};
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  image?: string;
+  order_id?: string;
+  handler: (response: RazorpayPaymentResponse) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+  };
+  modal?: {
+    ondismiss?: () => void;
+    escape?: boolean;
+    confirm_close?: boolean;
+    animation?: boolean;
+  };
 }
 
 interface RazorpayInstance {
-	open: () => void;
+  open: () => void;
+  on: (event: string, callback: (response: unknown) => void) => void;
+  close: () => void;
 }
 
 interface Window {
-	Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
 }

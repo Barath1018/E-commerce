@@ -44,31 +44,76 @@ export default function Cart() {
       }
 
       const keyId = (import.meta.env.VITE_RAZORPAY_KEY_ID as string)?.replace(/['"]/g, '').trim();
-      if (!keyId) { toast.error('Razorpay key missing.'); setCheckoutPending(false); return; }
-      if (!window.Razorpay) { toast.error('Razorpay SDK loading.'); setCheckoutPending(false); return; }
+      if (!keyId) { toast.error('Razorpay key missing.'); return; }
+      if (!window.Razorpay) { toast.error('Razorpay SDK not loaded.'); return; }
+
+      const amount = Math.round(total * 100);
+
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, currency: 'INR' }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create payment order');
+      }
+
+      const { order_id } = await res.json();
+
+      const allItems = [...paidItems, ...freeItems];
 
       const razorpay = new window.Razorpay({
         key: keyId,
-        amount: Math.round(total * 100),
+        order_id,
+        amount,
         currency: 'INR',
         name: 'Aesthify Studio',
         description: `${paidItems.length} item(s)`,
-        handler: async () => {
+        handler: async (response) => {
           try {
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const err = await verifyRes.json();
+              throw new Error(err.error || 'Payment verification failed');
+            }
+
+            const { payment_id } = await verifyRes.json();
+
             const order = await createOrder({
               userId: user.id,
-              items: [...paidItems, ...freeItems].map((i) => ({ product: i.product, quantity: i.quantity, licenseType: i.licenseType })),
+              items: allItems.map((i) => ({ product: i.product, quantity: i.quantity, licenseType: i.licenseType })),
               total,
+              paymentId: payment_id,
             });
             clearCart();
             setCompletedOrder(order);
-          } catch (err: any) { toast.error(err.message); }
+          } catch (err: any) {
+            toast.error(err.message || 'Payment verification failed');
+          }
         },
         prefill: { name: user.user_metadata?.full_name ?? '', email: user.email ?? '' },
         theme: { color: '#ffffff' },
         modal: { ondismiss: () => toast('Payment cancelled') },
       });
+
+      razorpay.on('payment.failed', (response: any) => {
+        toast.error(response.error?.description || 'Payment failed');
+      });
+
       razorpay.open();
+    } catch (err: any) {
+      toast.error(err.message || 'Checkout failed');
     } finally {
       setCheckoutPending(false);
     }
@@ -183,7 +228,7 @@ export default function Cart() {
           disabled={checkingOwned || checkoutPending}
           className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-gray-950 transition hover:bg-white/90 shadow-lg shadow-white/10 disabled:opacity-50"
         >
-          {checkingOwned ? 'Checking...' : total === 0 ? 'Download Free' : 'Checkout'}
+          {checkingOwned ? 'Checking...' : checkoutPending ? 'Processing...' : total === 0 ? 'Download Free' : 'Checkout'}
         </button>
       </div>
     </div>
